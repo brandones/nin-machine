@@ -153,7 +153,7 @@ Oscil<SIN2048_NUM_CELLS, CONTROL_RATE> kVol2(SIN2048_DATA);
 Oscil<SIN2048_NUM_CELLS, CONTROL_RATE> kVol3(SIN2048_DATA);
 Oscil<SIN2048_NUM_CELLS, CONTROL_RATE> kVol4(SIN2048_DATA);
 Oscil<SIN2048_NUM_CELLS, CONTROL_RATE> kVol5(SIN2048_DATA);
-Oscil<SQUARE_NO_ALIAS_2048_NUM_CELLS, CONTROL_RATE> kVolTotal(SQUARE_NO_ALIAS_2048_DATA);
+Oscil<SIN2048_NUM_CELLS, CONTROL_RATE> kVolTotal(SIN2048_DATA);
 
 //***************END********************************************************************************************
 
@@ -162,6 +162,7 @@ char v1,v2,v3,v4,v5;  //char is more efficient than int, for some reason
 int f1,f2,f3,f4,f5;  // store the values from the analog pins to set frequency
 float f6;  // frequency from total oscillator will be a float
 int wav = 0;      // store the value of the two wave switches
+int lfo = 0;      // store the value of the LFO switch
 int oldWav = 0;   // remember the previous value of the wave switches, so we know if it's changed
 int upCycle = 1;  // count the update cycle.  We only read a few of the inputs on each cycle, to reduce clicking souds
 //***************END********************************************************************************************
@@ -242,10 +243,10 @@ void loop() {
 } 
 
 float frequencyBasedCompression(int f) {
-  float compression = 1.0f / sqrt(f);
-  if (f < 210) {
-    compression *= sqrt(log10(220 - f));
+  if (f < 25) {
+    return 0.0f;
   }
+  float compression = 1.0f / pow(f, 0.7) * 9;
   return compression;
 }
 
@@ -271,24 +272,26 @@ void updateControl()
       aOsc3.setFreq(f3);
       v1 = kVol1.next() * frequencyBasedCompression(f1);  // update three oscillator volumes
       v2 = kVol2.next() * frequencyBasedCompression(f2);
-      v3 = kVol3.next() * frequencyBasedCompression(f3);   
+      v3 = kVol3.next() * frequencyBasedCompression(f3);
    
     break;
     case 3:     // read three analog pins 
       f4=(mozziAnalogRead(A3)); 
       f5=(mozziAnalogRead(A4));
       f6=(mozziAnalogRead(A5));
+      Serial.println(f6);
       f6 = 10.0f / max((f6 - 40)*4, 1.0f);
       break;
-     case 4: // update three oscillator volumes
+     case 4: // update the two upper oscillators
       aOsc4.setFreq(f4 << 1);      
-      aOsc5.setFreq(f5 << 2);
+      aOsc5.setFreq(f5 << 1);
       kVolTotal.setFreq(f6);
-      v4 = kVol4.next() * frequencyBasedCompression(f4 << 1);     // update three oscillator volumes
-      v5 = kVol5.next() * frequencyBasedCompression(f5 << 2);
+      v4 = kVol4.next() * frequencyBasedCompression(f4);     // update the two upper oscillator volumes
+      v5 = kVol5.next() * frequencyBasedCompression(f5);
     break; 
-    case 5:   // read two digital pins
+    case 5:   // read three digital pins
       wav = digitalRead(2) + (digitalRead(3)<<1); 
+      lfo = digitalRead(4);
       if (wav!=oldWav) // swap the oscillator tables, but only if the switch position has changed
         {
         Serial.print("changing wav! ");
@@ -319,15 +322,16 @@ void updateControl()
 }
 
 int updateAudio(){
-  float vtot = max(kVolTotal.next(), 0) / 128.0f;
   long asigDRN = (long)
     aOsc1.next()*v1 +
     aOsc2.next()*v2 +
     aOsc3.next()*v3 +
     aOsc4.next()*v4 +
     aOsc5.next()*v5;
-  asigDRN *= vtot;
-  asigDRN >>=6;
-  Serial.println(asigDRN);
+  if (lfo == 1) {
+    int vtot = ((kVolTotal.next() + 128) >> 1) + 128; // Range: 128 to 255
+    asigDRN = (asigDRN * vtot) >> 8; // Fast multiplication and division by 256
+  }
+  asigDRN >>= 8;
   return (int) asigDRN;
 }
