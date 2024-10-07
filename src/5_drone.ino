@@ -145,7 +145,6 @@ Oscil<SIN2048_NUM_CELLS, AUDIO_RATE> aOsc2;
 Oscil<SIN2048_NUM_CELLS, AUDIO_RATE> aOsc3;
 Oscil<SIN2048_NUM_CELLS, AUDIO_RATE> aOsc4;
 Oscil<SIN2048_NUM_CELLS, AUDIO_RATE> aOsc5;
-Oscil<SIN2048_NUM_CELLS, AUDIO_RATE> aOsc6;
 
 // volume controls, use sin regardless of the harmonic oscillator
 Oscil<SIN2048_NUM_CELLS, CONTROL_RATE> kVol1(SIN2048_DATA);
@@ -153,13 +152,12 @@ Oscil<SIN2048_NUM_CELLS, CONTROL_RATE> kVol2(SIN2048_DATA);
 Oscil<SIN2048_NUM_CELLS, CONTROL_RATE> kVol3(SIN2048_DATA);
 Oscil<SIN2048_NUM_CELLS, CONTROL_RATE> kVol4(SIN2048_DATA);
 Oscil<SIN2048_NUM_CELLS, CONTROL_RATE> kVol5(SIN2048_DATA);
-Oscil<SIN2048_NUM_CELLS, CONTROL_RATE> kVol6(SIN2048_DATA);
 
 //***************END********************************************************************************************
 
 // ******** variables for Drone *******************************************************************************
-char v1,v2,v3,v4,v5,v6;  //char is more efficient than int, for some reason
-int f1,f2,f3,f4,f5,f6;  // store the values from the analog pins to set frequency
+char v1,v2,v3,v4,v5;  //char is more efficient than int, for some reason
+int f1,f2,f3,f4,f5;  // store the values from the analog pins to set frequency
 int wav = 0;      // store the value of the two wave switches
 int lfo = 0;      // store the value of the LFO switch
 int oldWav = 0;   // remember the previous value of the wave switches, so we know if it's changed
@@ -182,17 +180,15 @@ void setup() {
   aOsc3.setFreq(100);
   aOsc4.setFreq(100);
   aOsc5.setFreq(100);
-  aOsc6.setFreq(100);
 
 //// set volume change freq
-  kVol1.setFreq(0.098f);
-  kVol2.setFreq(0.076f);
+  kVol1.setFreq(6.0f);
+  kVol2.setFreq(0.28f);
   kVol3.setFreq(0.28f);
   kVol4.setFreq(0.188f);
-  kVol5.setFreq(0.124f);
-  kVol6.setFreq(0.049f);
+  kVol5.setFreq(0.36f);
 
-  v1=v2=v3=v4=v5=v6=128;
+  v1=v2=v3=v4=v5=128;
   
 //****************End*********************************************************************************************
 
@@ -211,7 +207,6 @@ void setTable1() {
       aOsc3.setTable(SIN2048_DATA);
       aOsc4.setTable(SIN2048_DATA);
       aOsc5.setTable(SIN2048_DATA);
-      aOsc6.setTable(SIN2048_DATA);
       }
 // ******************************** oscillator type 2 for Drone ************************************************      
 void setTable2() {
@@ -220,7 +215,6 @@ void setTable2() {
       aOsc3.setTable(SQUARE_NO_ALIAS_2048_DATA);
       aOsc4.setTable(SQUARE_NO_ALIAS_2048_DATA);
       aOsc5.setTable(SQUARE_NO_ALIAS_2048_DATA);
-      aOsc6.setTable(SQUARE_NO_ALIAS_2048_DATA);
        }
 // ******************************** oscillator type 3 for Drone ************************************************    
 void setTable3() {
@@ -229,7 +223,6 @@ void setTable3() {
       aOsc3.setTable(TRIANGLE_VALVE_2_2048_DATA);
       aOsc4.setTable(TRIANGLE_VALVE_2_2048_DATA);
       aOsc5.setTable(TRIANGLE_VALVE_2_2048_DATA);
-      aOsc6.setTable(TRIANGLE_VALVE_2_2048_DATA);
       }
 // ******************************** oscillator type 4 for Drone ************************************************
 void setTable4() {
@@ -238,7 +231,6 @@ void setTable4() {
       aOsc3.setTable(SAW2048_DATA);
       aOsc4.setTable(SAW2048_DATA);
       aOsc5.setTable(SAW2048_DATA);
-      aOsc6.setTable(SAW2048_DATA);
     } 
 // ******************************** end of oscillator setTable voids ********************************************
 
@@ -282,15 +274,12 @@ void updateControl()
     case 3:     // read three analog pins 
       f4=(mozziAnalogRead(A3)); 
       f5=(mozziAnalogRead(A4));
-      f6=(mozziAnalogRead(A5));
       break;
      case 4: // update the three upper oscillators
       aOsc4.setFreq(f4 << 1);      
       aOsc5.setFreq(f5 << 1);
-      aOsc6.setFreq(f6 << 1);
       v4 = kVol4.next() * frequencyBasedCompression(f4);     // update the three upper oscillator volumes
       v5 = kVol5.next() * frequencyBasedCompression(f5);
-      v6 = kVol6.next() * frequencyBasedCompression(f6);
     break; 
     case 5:   // read two digital pins
       wav = digitalRead(2) + (digitalRead(3)<<1); 
@@ -329,8 +318,7 @@ int updateAudio(){
     aOsc2.next()*v2 +
     aOsc3.next()*v3 +
     aOsc4.next()*v4 +
-    aOsc5.next()*v5 +
-    aOsc6.next()*v6;
+    aOsc5.next()*v5;
   asigDRN >>= 8;
   return (int) asigDRN;
 }
